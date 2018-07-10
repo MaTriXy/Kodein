@@ -1,4 +1,89 @@
 
+#### 5.2.0 (20-04-2018)
+
+  - CORE
+    * Named Modules cannot be imported more than once.
+    * Introducing `importOnce` that allows to import a named module if it has not already been imported:
+      [see documentation](http://kodein.org/Kodein-DI/?5.2/core#module-uniqueness).
+    * Introducing `newScopeRegistry` that creates either a single or a multime item registry.
+
+ - ANDROID
+   * Android support has been split between `kodein-di-framework-android-core`, `kodein-di-framework-android-support` (for the Android Support library) and `kodein-di-framework-android-x` (for the AndroidX library): 
+     [see documentation](http://kodein.org/Kodein-DI/?5.2/android#install).
+
+#### 5.1.1 (20-04-2018)
+
+  - ANDROID
+    * Fixed `ActivityRetainedScope` NullPointerException regression.
+
+
+#### 5.1.0 (16-04-2018)
+
+  - CORE
+    * BREAKING CHANGE: updated the `ScopeRegistry` and `Scope` interfaces to get an `A` generic argument that allows to create scopes specialized for a type of factory argument.
+    * Introduced the `ScopeCloseable` interface that allows singletons / multitons objetcs to be closed when they are removed from the scope: [see documentation](http://kodein.org/Kodein-DI/?5.1/core#scope-closeable).
+    * The `SingleItemScopeRegistry` class now allows for key change, which closes the previous value and keeps the new.
+      This allows for `scoped(SingleItemScopeRegistry<Any?>()).multiton`:
+      [see documentation](http://kodein.org/Kodein-DI/?5.1/core#scope-registry).
+    * Unnamed module creation deprecated (in favour of named modules).
+  
+  - ANDROID
+    * `activityRetainedScope` deprecated in favour of `ActivityRetainedScope`.
+    * `ActivityRetainedScope` is compatible with `ScopeCloseable`.
+    * `androidScope` deprecated in favour of `AndroidComponentsWeakScope`.
+    * Introducing `AndroidLifecycleScope`: a scope that uses LifecycleOwner components to close properly close instances.
+
+
+#### 5.0.1 (16-04-2018)
+
+  - FRAMEWORK
+    * The Kodein-DI library is officially part of the in-progress Kodein Framework!
+
+  - GRADLE
+    * Project is entirely configured with Gradle Kotlin DSL
+    * Project relies configuration relies heavily on `kodein-internal-gradle-plugin` which abstracts the configuration of all Kodein Framework components.
+  
+  - CORE
+    * Added `factoryX` functions to enable to directly retrieve a multi-argument function `(A1, A2) -> T` when using multi-argument bindings.
+   
+   - ANDROID
+    * Corrected a stack overflow error when using generic types on SDK 19 and lower
+   
+  - NATIVE
+    * Using new native distribution model to allow gradle dependency retrieval
+    
+
+#### 5.0.0 (10-04-2018)
+
+  - DOCUMENTATION
+    * Fragmented documentation: http://kodein.org/Kodein-DI/
+    * Getting started: http://kodein.org/Kodein-DI/?5.0/getting-started
+    * Migration from version 4 to 5: http://kodein.org/Kodein-DI/?5.0/migration-4to5
+
+  - CORE
+    * Package change: `org.kodein.di`, `org.kodein.di.generic`, `org.kodein.di.erased`.
+    * Everything is lazy by default.
+    * Distribution via Bintray's JCenter.
+    * Compatible with Kotlin/Native (Huge thanks to Nikolay Igotti and his amazing Kotlin/Native team!).
+    * Support for subtype bindings: [see documentation](http://kodein.org/Kodein-DI/?5.0/core#_subtypes_bindings).
+    * Ability to retrieve `allInstances`, `allProviders` or `allFactories` that match subtypes of a given type.
+    * Support for multi-argument factories & multiton.
+    * Changed the `extend` semantic to manage copy of state-holding bindings. [see documentation](http://kodein.org/Kodein-DI/?5.0/core#_overridden_access_from_parent).
+    * Complete rewrite of custom scopes.
+    * Better recursion error messages.
+    * Better currying syntax: `kodein.instance(arg = whatever)`.
+    * Injector has been replaced with `KodeinTrigger` and `LateInitKodein`, each taking a part of the responsibility.
+    * Introducing `LateInitKodein`.
+    * `scopeSingleton` and `refSingleton` are now options of `singleton`. Same goes for `multiton`.
+    * Support for non state-holding bindings to access the `receiver`.
+    * Support for an external source that will be queried when Kodein has no answer.
+    
+  - ANDROID
+    * Full rewrite of the android components, effectively removing them, replacing them with a much lighter system. [See documentation](http://kodein.org/Kodein-DI/?5.0/android)
+  
+  - INTERNALS
+    * Full rewrite of the retrieval engine, introducing `KodeinTree` to select the matching binding according to a query.
+
 #### 4.1.0 (28-07-2017)
 
  - CORE
@@ -159,7 +244,7 @@ No changes from `3.2.0-beta3`
 ### 3.0.0-beta5 (12-07-2016)
 
  - FEATURES
-   * Kodein's source code & API is now [fully documented](https://salomonbrys.github.io/Kodein/kodein-dokka/kodein/com.github.salomonbrys.kodein/index.html)!
+   * Kodein's source code & API is now fully documented!
    * You can now bind a `Kodein.Bind` directly with `container.bind(bind)`.
    * `lazyKodein {...}` now returns a `LazyKodein` object, which can be used either as a lazy property or to inject lazy
      properties.
@@ -268,7 +353,7 @@ No changes from `3.2.0-beta3`
      functions can be used without parameter on a `KodeinAware` or `KodeinInjected` class (which is where they reach
      their full potential!).
    * Introducing `Kodein.global` which is a global Kodein instance for all. It is on its module and is not proposed by
-     default. To use it, you must declare the dependency `com.github.salomonbrys.kodein:kodein-global:3.0.+`. You can
+     default. To use it, you must declare the dependency `org.kodein:kodein-global:3.0.+`. You can
      add modules to it with `Kodein.global.addImport(module)`. After that, you can use `Kodein.global` as a regular
      Kodein object. Be aware that once you have injected / retrieved the first value with `Kodein.global`, then adding
      modules to it will throw an exception.
