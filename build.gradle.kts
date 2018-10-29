@@ -12,7 +12,7 @@ buildscript {
     }
 
     dependencies {
-        classpath("org.kodein.internal.gradle:kodein-internal-gradle-plugin:1.1.1")
+        classpath("org.kodein.internal.gradle:kodein-internal-gradle-plugin:1.3.0")
     }
 
 }
@@ -24,7 +24,7 @@ allprojects {
     }
 
     group = "org.kodein.di"
-    version = "5.2.0"
+    version = "5.3.0"
 }
 
 val travisBuild by extra { System.getenv("TRAVIS") == "true" }

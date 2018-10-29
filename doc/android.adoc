@@ -4,8 +4,8 @@ Salomon BRYS <salomon.brys@gmail.com>
 :toc-position: left
 :toclevels: 5
 
-:version: 5.2.0
-:branch: 5.2
+:version: 5.3.0
+:branch: 5.3
 
 You can use Kodein as-is in your Android project or use the util library `kodein-android`.
 
@@ -139,7 +139,7 @@ class MyApplication : Application(), KodeinAware {
 }
 ----
 
-You can see everything that this module proposes in the Kodein-Android https://github.com/Kodein-Framework/Kodein-DI/blob/{branch}/framework/kodein-framework-android/src/main/java/org/kodein/android/module.kt[module.kt] file.
+You can see everything that this module proposes in the Kodein-Android https://github.com/Kodein-Framework/Kodein-DI/blob/{branch}/framework/android/kodein-di-framework-android-core/src/main/java/org/kodein/di/android/module.kt[module.kt] file.
 
 [source, kotlin]
 .Example: using kodein to retrieve a LayoutInflater
@@ -184,14 +184,15 @@ Kodein allows you to create a `Kodein` instance that lives only inside your own 
 ----
 class MyActivity : Activity(), KodeinAware {
     private val _parentKodein by closestKodein() <1>
-    override val kodein: Kodein = Kodein {
-        extend(_parentKodein) <2>
+    override val kodein: Kodein by Kodein.lazy { <2>
+        extend(_parentKodein) <3>
         /* activity specific bindings */
     }
 }
 ----
 <1> Get the "global" application kodein.
-<2> Extends the "global" application kodein, to be able to access, with this new `Kodein` object, all bindings defined at the application level.
+<2> Using `Kodein.lazy` because Activity has no context access on init.
+<3> Extends the "global" application kodein, to be able to access, with this new `Kodein` object, all bindings defined at the application level.
 
 
 === Activity Retained Kodein
@@ -307,7 +308,7 @@ class MyActivity : Activity(), KodeinAware {
 .Example: a KodeinAware Activity
 ----
 class MyActivity : Activity(), KodeinAware {
-    override lateinit val kodein: Kodein
+    override lateinit var kodein: Kodein
     override fun onCreate(savedInstanceState: Bundle?) {
         kodein = (applicationContext as KodeinAware).kodein
     }

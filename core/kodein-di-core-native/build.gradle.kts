@@ -1,15 +1,17 @@
+import org.jetbrains.kotlin.gradle.plugin.experimental.internal.KotlinNativeMainComponent
+
 plugins {
     id("kodein-native")
 }
 
-konanArtifacts {
-    library(mapOf("targets" to kodeinNative.allTargets), name) {
-        enableMultiplatform(true)
-    }
-}
-
 dependencies {
     expectedBy(project(":core:kodein-di-core-common"))
+}
+
+components.getByName("main") {
+    this as KotlinNativeMainComponent
+    outputKinds.set(listOf(KotlinNativeMainComponent.KLIBRARY))
+    targets = kodeinNative.allTargets
 }
 
 kodeinPublication {

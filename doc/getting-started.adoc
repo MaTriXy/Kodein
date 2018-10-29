@@ -4,8 +4,8 @@ Salomon BRYS <salomon.brys@gmail.com>
 :toc-position: left
 :toclevels: 5
 
-:version: 5.2.0
-:branch: 5.2
+:version: 5.3.0
+:branch: 5.3
 
 Kodein (for KOtlin DEpendency INjection) is a DI framework.
 It allows you to bind your business unit interfaces with their implementation and thus having each business unit being independent.
@@ -320,7 +320,7 @@ If you are using injection, you can pass the argument the exact same way:
 .Example: binding the Presenter class with injection
 ----
 val kodein = Kodein {
-    bind<Presenter>() with singleton { Presenter(instance(), inetance()) }
+    bind<Presenter>() with singleton { Presenter(instance(), instance()) }
 }
 ----
 
