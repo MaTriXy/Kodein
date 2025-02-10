@@ -1,0 +1,239 @@
+= Global & Configurable Kodein DI
+
+== Introduction
+
+The Configurable DI Plugin gives you :
+
+- A `ConfigurableDI` class that you can pass around and have different sections of your code configure its bindings.
+- A `DI.global` instance that allows to have "one true" source.
+
+The Configurable DI Plugin is an extension that is not proposed  _by default_, this paradigm is in a separate module.
+
+NOTE: Using or not using this is a matter of taste and is neither recommended nor discouraged.
+
+
+== Install
+
+[[install-jvm]]
+=== JVM
+
+==== With Gradle
+
+[TIP]
+====
+If you are *NOT* using *Gradle 6+*, you should declare the use of the Gradle Metadata experimental feature
+
+[subs="attributes"]
+.settings.gradle.kts
+----
+enableFeaturePreview("GRADLE_METADATA")
+----
+
+====
+
+Add the MavenCentral repository:
+
+[source,groovy,subs="attributes"]
+----
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+----
+
+Then add the dependency:
+
+[source,groovy,subs="attributes"]
+----
+dependencies {
+    implementation 'org.kodein.di:kodein-di-conf:{version}'
+}
+----
+
+Add the dependency:
+
+[source,xml,subs="attributes"]
+----
+&lt;dependencies&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.kodein.di&lt;/groupId&gt;
+        &lt;artifactId&gt;kodein-di-conf-jvm&lt;/artifactId&gt;
+        &lt;version&gt;{version}&lt;/version&gt;
+    &lt;/dependency&gt;
+&lt;/dependencies&gt;
+----
+
+WARNING: Use `kodein-di-conf-jvm`, as _Kotlin/Multiplatform_ projects configuration does not work with Maven
+
+[[kotlin-js]]
+=== JavaScript (Gradle)
+
+Because _Kodein-DI_ for JavaScript is compiled as a https://github.com/umdjs/umd[UMD module], it can be imported:
+
+* In a browser:
+** as an AMD module (for example with RequireJS) (See index.html in the demo project).
+** Directly in an HTML page with a `<script>` tag (See index2.html in the demo project).
+* In NodeJS, as a regular CJS module.
+
+Add the MavenCentral repository:
+
+[source,groovy,subs="attributes"]
+----
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+----
+
+Then add the dependency:
+
+[source,groovy,subs="attributes"]
+----
+dependencies {
+    compile 'org.kodein.di:kodein-di-conf-js:{version}'
+}
+----
+
+[[kotlin-multiplatform]]
+=== Kotlin/Multiplatform (Gradle)
+
+NOTE: _Kodein-DI_ supports the following targets: +
+androidArm32, androidArm64, iosArm32, iosArm64, iosX64, linuxArm32Hfp, linuxMips32, linuxMipsel32, linuxX64, macosX64, mingwX64
+
+_Kodein-DI_ uses the new gradle native dependency model.
+
+Add the MavenCentral repository:
+
+[source,groovy,subs="attributes"]
+----
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+----
+
+Then add the dependency:
+
+[source,groovy,subs="attributes"]
+----
+kotlin {
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation "org.kodein.di:kodein-di-conf:{version}"
+            }
+        }
+    }
+}
+----
+
+== ConfigurableDI
+
+=== Configuring
+
+You can import modules, extend DI objects, or add bindings inside this `ConfigurableDI` using `addImport`, `addExtend` and `addConfig`.
+
+[source, kotlin]
+.Example: adding a module inside the global DI
+----
+fun test() {
+    val di = ConfigurableDI()
+        .addModule(aModule)
+        .addExtend(otherDI)
+        .addConfig {
+            bind<Dice> { provider { RandomDice(0, 5) } }
+            bind<DataSource> { singleton { SqliteDS.open("path/to/file") } }
+        }
+}
+----
+
+CAUTION: The `DI` underlying instance will effectively be constructed on first retrieval.
+         Once it is constructed, trying to configure it will throw an `IllegalStateException`.
+
+
+=== Retrieving
+
+You can use a `ConfigurableDI` object like any `DI` object.
+
+CAUTION: Once you have retrieved the first value with a `ConfigurableDI`, trying to configure it will throw an `IllegalStateException`.
+
+
+=== Mutating
+
+A `ConfigurableDI` can be mutable.
+
+[source, kotlin]
+.Example: Creating a mutable ConfigurableDI
+----
+val di = ConfigurableDI(mutable = true)
+----
+
+[WARNING]
+====
+Using a mutable `ConfigurableDI` can lead to *very bad code practice* and *very difficult bugs*. +
+Therefore, using a mutable `ConfigurableDI` *IS discouraged*. +
+Note that every time a `ConfigurableDI` is mutated, its cache is entirely flushed, meaning that it has a real impact on performance! +
+Please use the mutating feature only if you truly need it, know what you're doing, and see no other way.
+====
+
+A mutable `ConfigurableDI` can be configured even _after first retrieval_.
+
+[source, kotlin]
+.Example: mutating a mutable ConfigurableDI
+----
+fun test() {
+    val di = ConfigurableDI(mutable = true)
+
+    di.addModule(aModule)
+
+    val ds: DataSource by di.instance()
+
+    di.addModule(anotherModule) // <1>
+}
+----
+<1> This would have failed if the ConfigurableDI was not mutable.
+
+You can also use the `clear` method to remove all bindings.
+
+
+== The god complex: One True DI
+
+Sometimes, you want one static DI for your entire application.
+E.g. you don't want to have to hold & pass a DI instance throughout your application.
+
+For these cases, the `di-conf` module proposes a static `DI.global` instance.
+
+[source,kotlin]
+.Example creating, configuring and using the global one true DI.
+----
+fun test() {
+    DI.global.addModule(apiModule)
+    DI.global.addModule(dbModule)
+
+    val ds: DataSource by DI.global.instance()
+}
+----
+
+[CAUTION]
+====
+Just like any `ConfigurableDI`, `DI.global` must be configured *before* being used for retrieval, or an `IllegalStateException` will be thrown.
+It is possible to set `DI.global` to be mutable by setting `DI.global.mutable = true` but it *must* be set *before* any retrieval!
+====
+
+
+=== Being globally aware
+
+You can use the `GlobalDIAware` interface that needs no implementation to be aware of the global di.
+
+[source, kotlin]
+.Example: a DIGlobalAware class
+----
+class MyManager() : DIGlobalAware {
+    val ds: DataSource by instance()
+}
+----
+
+

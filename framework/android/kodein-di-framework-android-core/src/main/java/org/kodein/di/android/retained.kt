@@ -1,15 +1,23 @@
+@file:Suppress("DEPRECATION")
+
 package org.kodein.di.android
 
 import android.app.Activity
 import android.app.Fragment
 import android.os.Bundle
-import org.kodein.di.Kodein
+import org.kodein.di.*
 
 /** @suppress */
-class RetainedKodeinFragment : Fragment() {
+public class RetainedDIFragment : Fragment() {
 
-    var kodein: Kodein? = null
+    private var _di: DI? = null
+    public var di: DI?
+        get() = _di
+        set(value) {
+            _di = value
+        }
 
+    @Deprecated("Deprecated in Java")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -18,21 +26,21 @@ class RetainedKodeinFragment : Fragment() {
 
 }
 
-private const val kodeinRetainedFragmentTag = "org.kodein.di.android.RetainedKodeinFragment"
+private const val DI_RETAINED_FRAGMENT_TAG = "org.kodein.di.android.RetainedDIFragment"
 
 /**
- * A Kodein instance that will be retained between activity changes.
+ * A DI instance that will be retained between activity changes.
  *
  * @property allowSilentOverride Whether this module is allowed to non-explicit overrides.
  * @property init The block of configuration for this module.
  */
-fun Activity.retainedKodein(allowSilentOverride: Boolean = false, init: Kodein.MainBuilder.() -> Unit): Lazy<Kodein> = lazy {
-    (fragmentManager.findFragmentByTag(kodeinRetainedFragmentTag) as? RetainedKodeinFragment)?.kodein?.let { return@lazy it }
+public fun Activity.retainedDI(allowSilentOverride: Boolean = false, init: DI.MainBuilder.() -> Unit): Lazy<DI> = lazy {
+    (fragmentManager.findFragmentByTag(DI_RETAINED_FRAGMENT_TAG) as? RetainedDIFragment)?.di?.let { return@lazy it }
 
-    val kodein = Kodein(allowSilentOverride, init)
-    val fragment = RetainedKodeinFragment()
-    fragment.kodein = kodein
-    fragmentManager.beginTransaction().add(fragment, kodeinRetainedFragmentTag).commit()
+    val di = DI(allowSilentOverride, init)
+    val fragment = RetainedDIFragment()
+    fragment.di = di
+    fragmentManager.beginTransaction().add(fragment, DI_RETAINED_FRAGMENT_TAG).commit()
 
-    return@lazy kodein
+    return@lazy di
 }

@@ -1,0 +1,120 @@
+[[install]]
+= Install
+
+[[install-jvm]]
+== JVM
+
+=== With Gradle
+
+Add the MavenCentral repository:
+
+[source,groovy,subs="attributes"]
+----
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+----
+
+Then add the dependency:
+
+[source,groovy,subs="attributes"]
+----
+dependencies {
+    implementation 'org.kodein.di:kodein-di:{version}'
+}
+----
+
+[TIP]
+====
+If you are working on a JVM project with Kodein, and are using Proguard to shrink down the size of your application, you must add the following rule to your configuration:
+
+[]
+.proguard-rules.pro
+----
+# Kodein : Keep the generic type information for the dependency container
+-keepattributes Signature
+----
+====
+
+Add the dependency:
+
+[source,xml,subs="attributes"]
+----
+&lt;dependencies&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.kodein.di&lt;/groupId&gt;
+        &lt;artifactId&gt;kodein-di-jvm&lt;/artifactId&gt;
+        &lt;version&gt;{version}&lt;/version&gt;
+    &lt;/dependency&gt;
+&lt;/dependencies&gt;
+----
+
+WARNING: Use `kodein-di-jvm`, as _Kotlin/Multiplatform_ projects does not work with Maven
+
+[[kotlin-multiplatform]]
+== Kotlin/Multiplatform (Gradle)
+
+NOTE: _Kodein-DI_ supports the following targets: +
+androidArm32, androidArm64, iosArm32, iosArm64, iosX64, linuxArm32Hfp, linuxMips32, linuxMipsel32, linuxX64, macosX64, mingwX64
+
+_Kodein-DI_ uses the new gradle native dependency model.
+
+Add the MavenCentral repository:
+
+[source,groovy,subs="attributes"]
+----
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+----
+
+Then add the dependency:
+
+[source,groovy,subs="attributes"]
+----
+kotlin {
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation "org.kodein.di:kodein-di:{version}"
+            }
+        }
+    }
+}
+----
+
+[[kotlin-js]]
+== JavaScript (Gradle)
+
+NOTE: Since Kotlin 1.8, legacy backend has been deprecated, thus starting from 7.17.0 Kodein is only available for JS-IR.
+
+Because _Kodein_ for JavaScript is compiled as a https://github.com/umdjs/umd[UMD module], it can be imported:
+
+* In a browser:
+** as an AMD module (for example with RequireJS) (See index.html in the demo project).
+** Directly in an HTML page with a `<script>` tag (See index2.html in the demo project).
+* In NodeJS, as a regular CJS module.
+
+Add the MavenCentral repository:
+
+[source,groovy,subs="attributes"]
+----
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+----
+
+Then add the dependency:
+
+[source,groovy,subs="attributes"]
+----
+dependencies {
+    compile 'org.kodein.di:kodein-di-js:{version}'
+}
+----

@@ -1,41 +1,56 @@
+@file:Suppress("DEPRECATION")
+
 package org.kodein.di.android
 
 import android.accounts.AccountManager
 import android.annotation.SuppressLint
-import android.app.*
+import android.app.Activity
+import android.app.ActivityManager
+import android.app.AlarmManager
+import android.app.Application
+import android.app.Dialog
+import android.app.DownloadManager
+import android.app.Fragment
+import android.app.KeyguardManager
+import android.app.NotificationManager
+import android.app.SearchManager
+import android.app.UiModeManager
+import android.app.WallpaperManager
 import android.app.admin.DevicePolicyManager
 import android.app.job.JobScheduler
 import android.app.usage.NetworkStatsManager
 import android.app.usage.UsageStatsManager
 import android.appwidget.AppWidgetManager
-import android.bluetooth.BluetoothManager
-import android.content.*
+import android.content.AbstractThreadedSyncAdapter
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Loader
+import android.content.RestrictionsManager
 import android.content.pm.LauncherApps
 import android.content.pm.ShortcutManager
-import android.hardware.ConsumerIrManager
 import android.hardware.SensorManager
 import android.hardware.camera2.CameraManager
-import android.hardware.display.DisplayManager
 import android.hardware.fingerprint.FingerprintManager
-import android.hardware.input.InputManager
 import android.hardware.usb.UsbManager
 import android.location.LocationManager
 import android.media.AudioManager
-import android.media.MediaRouter
 import android.media.midi.MidiManager
 import android.media.projection.MediaProjectionManager
 import android.media.session.MediaSessionManager
 import android.media.tv.TvInputManager
 import android.net.ConnectivityManager
-import android.net.nsd.NsdManager
 import android.net.wifi.WifiManager
 import android.net.wifi.p2p.WifiP2pManager
 import android.nfc.NfcManager
-import android.os.*
+import android.os.BatteryManager
+import android.os.Build
+import android.os.DropBoxManager
+import android.os.HardwarePropertiesManager
+import android.os.PowerManager
+import android.os.Vibrator
 import android.os.health.SystemHealthManager
 import android.os.storage.StorageManager
 import android.preference.PreferenceManager
-import android.print.PrintManager
 import android.telecom.TelecomManager
 import android.telephony.CarrierConfigManager
 import android.telephony.SubscriptionManager
@@ -44,169 +59,128 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityManager
-import android.view.accessibility.CaptioningManager
 import android.view.inputmethod.InputMethodManager
 import android.view.textservice.TextServicesManager
-import org.kodein.di.*
-import org.kodein.di.bindings.*
-import java.io.File
+import org.kodein.di.DI
+import org.kodein.di.bind
+import org.kodein.di.bindProvider
+import org.kodein.di.bindings.Factory
+import org.kodein.di.bindings.Provider
+import org.kodein.di.bindings.SimpleContextTranslator
+import org.kodein.type.TypeToken
+import org.kodein.type.generic
 
-interface AndroidContextGetter {
-    fun get(from: Any): Context?
-
-    companion object {
-        operator fun invoke(block: (Any) -> Context?) = object : AndroidContextGetter {
-            override fun get(from: Any) = block(from)
-        }
-    }
+public val androidCoreContextTranslators: DI.Module = DI.Module(name = "\u2063androidCoreContextTranslators") {
+    RegisterContextTranslator(SimpleContextTranslator<Fragment, Activity>(generic(), generic()) { it.activity })
+    RegisterContextTranslator(SimpleContextTranslator<Dialog, Context>(generic(), generic()) { it.context })
+    RegisterContextTranslator(SimpleContextTranslator<View, Context>(generic(), generic()) { it.context })
+    RegisterContextTranslator(SimpleContextTranslator<Loader<*>, Context>(generic(), generic()) { it.context })
+    RegisterContextTranslator(SimpleContextTranslator<AbstractThreadedSyncAdapter, Context>(generic(), generic()) { it.context })
 }
 
 /**
- * Android `Kodein.Module` that defines a lot of platform bindings.
+ * Android `DI.Module` that defines a lot of platform bindings.
  *
  * @param app The application object, used for context.
- * @return An Android `Kodein.Module` that defines a lot of platform bindings.
+ * @return An Android `DI.Module` that defines a lot of platform bindings.
  */
 @SuppressLint("NewApi")
-fun androidModule(app: Application) = Kodein.Module(name = "\u2063androidModule") {
+public fun androidCoreModule(app: Application): DI.Module = DI.Module(name = "\u2063androidModule") {
 
-    Bind() from SetBinding<Any?, AndroidContextGetter>(AnyToken, erased(), erasedSet())
+    importOnce(androidCoreContextTranslators)
 
-    Bind<AndroidContextGetter>(erased()).InSet(erasedSet()) with InstanceBinding(erased(), AndroidContextGetter {
-        when(it) {
-            is Fragment -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) it.context else it.activity
-            is Dialog -> it.context
-            is View -> it.context
-            is Loader<*> -> it.context
-            is AbstractThreadedSyncAdapter -> it.context
-            else -> null
+    val contextToken = generic<Context>()
+
+    bind { Provider(TypeToken.Any, generic()) { app } }
+
+    bind { Provider(contextToken, generic()) { context.assets } }
+    bind { Provider(contextToken, generic()) { context.contentResolver } }
+    bind { Provider(contextToken, generic()) { context.applicationInfo } }
+    bind { Provider(contextToken, generic()) { context.mainLooper } }
+    bind { Provider(contextToken, generic()) { context.packageManager } }
+    bind { Provider(contextToken, generic()) { context.resources } }
+    bind { Provider(contextToken, generic()) { context.theme } }
+
+    bind { Provider(contextToken, generic()) { PreferenceManager.getDefaultSharedPreferences(context) } }
+    bind {
+        Factory(contextToken, generic(), generic()) { name: String ->
+            context.getSharedPreferences(
+                name,
+                Context.MODE_PRIVATE
+            )
         }
-    })
-
-    lateinit var contextGetters: Set<AndroidContextGetter>
-
-    onReady {
-        contextGetters = Instance(erasedSet())
     }
 
-    fun Any.anyAndroidContext(): Context? {
-        (this as? Context)?.let { return it }
+    bind(tag = "cache") { Provider(contextToken, generic()) { context.cacheDir } }
+    // Bind<File>(generic(), tag = "externalCache") with Provider(contextToken, generic()) { context.externalCacheDir } TODO: re-enable once we found how to bind nullables
+    bind(tag = "files") { Provider(contextToken, generic()) { context.filesDir } }
+    bind(tag = "obb") { Provider(contextToken, generic()) { context.obbDir } }
 
-        contextGetters.forEach {
-            it.get(this)?.let { return it }
-        }
+    bind(tag = "packageCodePath") { Provider(contextToken, generic()) { context.packageCodePath } }
+    bind(tag = "packageName") { Provider(contextToken, generic()) { context.packageName } }
+    bind(tag = "packageResourcePath") { Provider(contextToken, generic()) { context.packageResourcePath } }
 
-        return null
-    }
-
-    fun <T> T.androidContext(): Context where T: WithReceiver, T: WithContext<*> =
-            receiver?.anyAndroidContext() ?: context?.anyAndroidContext() ?: app
-
-    Bind() from Provider(AnyToken, erased()) { app }
-
-    Bind() from Provider(AnyToken, erased()) { androidContext().assets }
-    Bind() from Provider(AnyToken, erased()) { androidContext().contentResolver }
-    Bind() from Provider(AnyToken, erased()) { androidContext().applicationInfo }
-    Bind() from Provider(AnyToken, erased()) { androidContext().mainLooper }
-    Bind() from Provider(AnyToken, erased()) { androidContext().packageManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().resources }
-    Bind() from Provider(AnyToken, erased()) { androidContext().theme }
-
-    Bind() from Provider(AnyToken, erased()) { PreferenceManager.getDefaultSharedPreferences(androidContext()) }
-    Bind() from Factory(AnyToken, erased(), erased()) { name: String -> androidContext().getSharedPreferences(name, Context.MODE_PRIVATE) }
-
-    Bind<File>(erased(), tag = "cache") with Provider(AnyToken, erased()) { androidContext().cacheDir }
-    Bind<File>(erased(), tag = "externalCache") with Provider(AnyToken, erased()) { androidContext().externalCacheDir }
-    Bind<File>(erased(), tag = "files") with Provider(AnyToken, erased()) { androidContext().filesDir }
-    Bind<File>(erased(), tag = "obb") with Provider(AnyToken, erased()) { androidContext().obbDir }
-
-    Bind<String>(erased(), tag = "packageCodePath") with Provider(AnyToken, erased()) { androidContext().packageCodePath }
-    Bind<String>(erased(), tag = "packageName") with Provider(AnyToken, erased()) { androidContext().packageName }
-    Bind<String>(erased(), tag = "packageResourcePath") with Provider(AnyToken, erased()) { androidContext().packageResourcePath }
-
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.ACCOUNT_SERVICE) as AccountManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.AUDIO_SERVICE) as AudioManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.DROPBOX_SERVICE) as DropBoxManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.LOCATION_SERVICE) as LocationManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.NFC_SERVICE) as NfcManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.POWER_SERVICE) as PowerManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.SEARCH_SERVICE) as SearchManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.SENSOR_SERVICE) as SensorManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.STORAGE_SERVICE) as StorageManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.TEXT_SERVICES_MANAGER_SERVICE) as TextServicesManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.UI_MODE_SERVICE) as UiModeManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.USB_SERVICE) as UsbManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.VIBRATOR_SERVICE) as Vibrator }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.WALLPAPER_SERVICE) as WallpaperManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.WIFI_P2P_SERVICE) as WifiP2pManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.WIFI_SERVICE) as WifiManager }
-    Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.WINDOW_SERVICE) as WindowManager }
-
-    if (Build.VERSION.SDK_INT >= 16) {
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.INPUT_SERVICE) as InputManager }
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.MEDIA_ROUTER_SERVICE) as MediaRouter }
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.NSD_SERVICE) as NsdManager }
-    }
-
-    if (Build.VERSION.SDK_INT >= 17) {
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.DISPLAY_SERVICE) as DisplayManager }
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.USER_SERVICE) as UserManager }
-    }
-
-    if (Build.VERSION.SDK_INT >= 18) {
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager }
-    }
-
-    if (Build.VERSION.SDK_INT >= 19) {
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager }
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.CAPTIONING_SERVICE) as CaptioningManager }
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.CONSUMER_IR_SERVICE) as ConsumerIrManager }
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.PRINT_SERVICE) as PrintManager }
-    }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.ACCOUNT_SERVICE) as AccountManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.ALARM_SERVICE) as AlarmManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.DROPBOX_SERVICE) as DropBoxManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.LOCATION_SERVICE) as LocationManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.NFC_SERVICE) as NfcManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.POWER_SERVICE) as PowerManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.SEARCH_SERVICE) as SearchManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.SENSOR_SERVICE) as SensorManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.STORAGE_SERVICE) as StorageManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.TEXT_SERVICES_MANAGER_SERVICE) as TextServicesManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.UI_MODE_SERVICE) as UiModeManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.USB_SERVICE) as UsbManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.WALLPAPER_SERVICE) as WallpaperManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.WIFI_P2P_SERVICE) as WifiP2pManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.WIFI_SERVICE) as WifiManager } }
+    bind { Provider(contextToken, generic()) { context.getSystemService(Context.WINDOW_SERVICE) as WindowManager } }
 
     if (Build.VERSION.SDK_INT >= 21) {
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.APPWIDGET_SERVICE) as AppWidgetManager }
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.BATTERY_SERVICE) as BatteryManager }
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.CAMERA_SERVICE) as CameraManager }
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler }
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps }
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager }
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.MEDIA_SESSION_SERVICE) as MediaSessionManager }
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.RESTRICTIONS_SERVICE) as RestrictionsManager }
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.TELECOM_SERVICE) as TelecomManager }
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.TV_INPUT_SERVICE) as TvInputManager }
+        bind { Provider(contextToken, generic()) { context.getSystemService(Context.APPWIDGET_SERVICE) as AppWidgetManager } }
+        bind { Provider(contextToken, generic()) { context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager } }
+        bind { Provider(contextToken, generic()) { context.getSystemService(Context.CAMERA_SERVICE) as CameraManager } }
+        bind { Provider(contextToken, generic()) { context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler } }
+        bind { Provider(contextToken, generic()) { context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps } }
+        bind { Provider(contextToken, generic()) { context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager } }
+        bind { Provider(contextToken, generic()) { context.getSystemService(Context.MEDIA_SESSION_SERVICE) as MediaSessionManager } }
+        bind { Provider(contextToken, generic()) { context.getSystemService(Context.RESTRICTIONS_SERVICE) as RestrictionsManager } }
+        bind { Provider(contextToken, generic()) { context.getSystemService(Context.TELECOM_SERVICE) as TelecomManager } }
+        bind { Provider(contextToken, generic()) { context.getSystemService(Context.TV_INPUT_SERVICE) as TvInputManager } }
     }
 
     if (Build.VERSION.SDK_INT >= 22) {
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager }
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager }
+        bind { Provider(contextToken, generic()) { context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager } }
+        bind { Provider(contextToken, generic()) { context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager } }
     }
 
     if (Build.VERSION.SDK_INT >= 23) {
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.CARRIER_CONFIG_SERVICE) as CarrierConfigManager }
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.FINGERPRINT_SERVICE) as FingerprintManager }
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.MIDI_SERVICE) as MidiManager }
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.NETWORK_STATS_SERVICE) as NetworkStatsManager }
+        bind { Provider(contextToken, generic()) { context.getSystemService(Context.CARRIER_CONFIG_SERVICE) as CarrierConfigManager } }
+        bind { Provider(contextToken, generic()) { context.getSystemService(Context.FINGERPRINT_SERVICE) as FingerprintManager } }
+        bind { Provider(contextToken, generic()) { context.getSystemService(Context.MIDI_SERVICE) as MidiManager } }
+        bind { Provider(contextToken, generic()) { context.getSystemService(Context.NETWORK_STATS_SERVICE) as NetworkStatsManager } }
     }
 
     if (Build.VERSION.SDK_INT >= 24) {
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.HARDWARE_PROPERTIES_SERVICE) as HardwarePropertiesManager }
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.SYSTEM_HEALTH_SERVICE) as SystemHealthManager }
+        bind { Provider(contextToken, generic()) { context.getSystemService(Context.HARDWARE_PROPERTIES_SERVICE) as HardwarePropertiesManager } }
+        bind { Provider(contextToken, generic()) { context.getSystemService(Context.SYSTEM_HEALTH_SERVICE) as SystemHealthManager } }
     }
 
     if (Build.VERSION.SDK_INT >= 25) {
-        Bind() from Provider(AnyToken, erased()) { androidContext().getSystemService(Context.SHORTCUT_SERVICE) as ShortcutManager }
+        bind { Provider(contextToken, generic()) { context.getSystemService(Context.SHORTCUT_SERVICE) as ShortcutManager } }
     }
 }

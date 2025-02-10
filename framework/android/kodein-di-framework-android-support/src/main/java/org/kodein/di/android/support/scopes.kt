@@ -1,39 +1,35 @@
 package org.kodein.di.android.support
 
-import android.arch.lifecycle.Lifecycle
-import android.arch.lifecycle.LifecycleObserver
-import android.arch.lifecycle.LifecycleOwner
-import android.arch.lifecycle.OnLifecycleEvent
-import org.kodein.di.bindings.ScopeRepositoryType
-import org.kodein.di.bindings.ScopeRegistry
-import org.kodein.di.bindings.SimpleScope
-import org.kodein.di.bindings.newScopeRegistry
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.OnLifecycleEvent
+import org.kodein.di.bindings.*
 import org.kodein.di.internal.synchronizedIfNull
 import java.util.HashMap
 
-open class AndroidLifecycleScope private constructor(private val repositoryType: ScopeRepositoryType) : SimpleScope<Any?, Any?> {
+public open class AndroidLifecycleScope private constructor(private val newRegistry: () -> ScopeRegistry) : Scope<LifecycleOwner> {
 
-    companion object multiItem: AndroidLifecycleScope(ScopeRepositoryType.MULTI_ITEM)
+    public companion object multiItem: AndroidLifecycleScope(::StandardScopeRegistry)
 
-    object singleItem: AndroidLifecycleScope(ScopeRepositoryType.SINGLE_ITEM)
+    public object singleItem: AndroidLifecycleScope(::SingleItemScopeRegistry)
 
-    private val map = HashMap<LifecycleOwner, ScopeRegistry<in Any?>>()
+    private val map = HashMap<LifecycleOwner, ScopeRegistry>()
 
-    override fun getRegistry(receiver: Any?, context: Any?): ScopeRegistry<in Any?> {
-        val owner = (context as? LifecycleOwner) ?: (receiver as LifecycleOwner) ?: throw IllegalStateException("Either the receiver or the context must be LifecycleOwner")
+    override fun getRegistry(context: LifecycleOwner): ScopeRegistry {
         return synchronizedIfNull(
                 lock = map,
-                predicate = { map[owner] },
+                predicate = { map[context] },
                 ifNotNull = { it },
                 ifNull = {
-                    val registry = newScopeRegistry<Any?>(repositoryType)
-                    map[owner] = registry
-                    owner.lifecycle.addObserver(object : LifecycleObserver {
+                    val registry = newRegistry()
+                    map[context] = registry
+                    context.lifecycle.addObserver(object : LifecycleObserver {
                         @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
                         fun onDestroy() {
-                            owner.lifecycle.removeObserver(this)
+                            context.lifecycle.removeObserver(this)
                             registry.clear()
-                            map.remove(owner)
+                            map.remove(context)
                         }
                     })
                     registry

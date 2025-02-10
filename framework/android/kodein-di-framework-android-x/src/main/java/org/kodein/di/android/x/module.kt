@@ -1,27 +1,26 @@
 package org.kodein.di.android.x
 
+import android.app.Activity
 import android.app.Application
-import android.content.Loader
-import android.os.Build
+import android.content.Context
 import androidx.fragment.app.Fragment
-import org.kodein.di.Kodein
-import org.kodein.di.android.AndroidContextGetter
-import org.kodein.di.android.androidModule
-import org.kodein.di.bindings.InSet
-import org.kodein.di.bindings.InstanceBinding
-import org.kodein.di.erased
-import org.kodein.di.erasedSet
+import androidx.lifecycle.AndroidViewModel
+import androidx.loader.content.Loader
+import org.kodein.di.DI
+import org.kodein.di.android.androidCoreContextTranslators
+import org.kodein.di.android.androidCoreModule
+import org.kodein.di.bindings.SimpleContextTranslator
+import org.kodein.type.generic
 
-fun androidXModule(app: Application) = Kodein.Module("\u2063androidXModule") {
+public val androidXContextTranslators: DI.Module = DI.Module("\u2063androidXContextTranslators") {
+    importOnce(androidCoreContextTranslators)
 
-    importOnce(androidModule(app))
+    RegisterContextTranslator(SimpleContextTranslator<Fragment, Activity>(generic(), generic()) { it.requireActivity() })
+    RegisterContextTranslator(SimpleContextTranslator<Loader<*>, Context>(generic(), generic()) { it.context })
+    RegisterContextTranslator(SimpleContextTranslator<AndroidViewModel, Application>(generic(), generic()) { it.getApplication() })
+}
 
-    Bind<AndroidContextGetter>(erased()).InSet(erasedSet()) with InstanceBinding(erased(), AndroidContextGetter {
-        when(it) {
-            is Fragment -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) it.context else it.activity
-            is Loader<*> -> it.context
-            else -> null
-        }
-    })
-
+public fun androidXModule(app: Application): DI.Module = DI.Module("\u2063androidXModule") {
+    importOnce(androidXContextTranslators)
+    importOnce(androidCoreModule(app))
 }

@@ -1,17 +1,16 @@
 plugins {
-    id("kodein-android")
-}
-
-kodeinPublication {
-    upload {
-        name = "Kodein-DI-Framework-Android-Core"
-        description = "Kodein DI Kotlin classes & extensions for the Android platform"
-        repo = "Kodein-DI"
-    }
+    kodein.library.android
 }
 
 dependencies {
-    api(project(":core:kodein-di-core-jvm"))
+    api(projects.kodeinDi)
+}
 
-    testImplementation("junit:junit:4.12")
+android {
+    namespace = "org.kodein.di.android"
+}
+
+kodeinUpload {
+    name = "Kodein-Framework-Android"
+    description = "Standard Kodein classes & extensions for Android"
 }

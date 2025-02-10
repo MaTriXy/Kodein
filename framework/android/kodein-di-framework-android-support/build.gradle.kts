@@ -1,19 +1,18 @@
 plugins {
-    id("kodein-android")
-}
-
-kodeinPublication {
-    upload {
-        name = "Kodein-DI-Framework-Android-Support"
-        description = "Kodein DI Kotlin classes & extensions for the Android Support library"
-        repo = "Kodein-DI"
-    }
+    kodein.library.android
 }
 
 dependencies {
-    api(project(":framework:android:kodein-di-framework-android-core"))
+    api(projects.framework.android.kodeinDiFrameworkAndroidCore)
 
-    implementation("com.android.support:appcompat-v7:27.1.0")
+    implementation(libs.android.appcompat)
+}
 
-    testImplementation("junit:junit:4.12")
+android {
+    namespace = "org.kodein.di.android.support"
+}
+
+kodeinUpload {
+    name = "Kodein-Framework-Android"
+    description = "Kodein classes & extensions with 'android.support' compatibility"
 }

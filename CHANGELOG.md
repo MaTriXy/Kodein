@@ -1,3 +1,304 @@
+#### 7.11.0 (18-02-2022)
+
+  - CORE
+    * Documentation improvements (thanks to the contributors!).  
+    * Deprecation cycle
+  - COMPOSE
+    * JB Compose 1.1.0 Alpha5
+    * Introduce `rememberDI` Composable function
+    * Fix `rememberX` functions` behavior
+    * Update documentation
+    
+#### 7.10.0 (29-10-2021)
+
+  - COMPOSE
+      * JB Compose beta5
+      * Enable Web target
+
+#### 7.9.0 (24-10-2021)
+
+  - CORE
+      * Gradle 7.2
+      * AGP 7
+      * Kotlin 1.5.31
+      * Apple Silicon support
+  - COMPOSE
+      * JB Compose beta1
+      * Android : remember ViewModel helper
+
+#### 7.8.0 (12-08-2021)
+
+  - CORE
+    * Kotlin 1.5.21
+    * Documentation
+  
+  - ANDROID
+    - 2 new modules have been created to support ViewModel retrieval with ease (thanks to @carltonwhitehead for his contribution).
+      - kodein-di-framework-android-x-viewmodel : Injection and retrieval of plain View Models with by viewModel() delegate.
+      - kodein-di-framework-android-x-viewmodel-savedstate : Injection and retrieval of View Models with SavedStateHandle with by viewModelWithSavedStateHandle() delegate.
+      
+  - COMPOSE: `kodein-di-framework-compose` module is now align with the stable version of Compose compiler (compatible with Kotlin 1.5.21) with improvements
+
+#### 7.6.0 (21-05-2021)
+
+  - CORE:
+    * Kotlin 1.5
+    * Kodein-Type 1.7.1
+      * Thanks to @eygraber for the heavy investigation #309
+  - Documentation
+
+#### 7.5.0 (30-03-2021)
+
+  - CORE
+    * Direct binding by adding `bind(tag: Any?, overrides: Boolean?, createBinding: () -> DIBinding)`
+      * `bind { singleton { Person("Romain") } }` is equivalent to `bind() from singleton { Person("Romain") }`
+      * `bind<IPerson> { singleton { Person("Romain") } }` is equivalent to `bind<IPerson>() with singleton { Person("Romain") }`
+      * `bind { scoped(SessionScope).singleton { Person("Romain") } }` is equivalent to `bind() with scoped(SessionScope).singleton { Person("Romain") }`
+      * etc.
+    * Simplified binding APIs
+      * `bindFactory` / `bindProvider` / `bindSingleton` / `bindMultiton` / `bindInstance` / `bindConstant`
+      * `bindSingleton { Person("Romain") }` is equivalent to `bind() from singleton { Person("Romain") }`  
+      * `bindSingleton<IPerson> { Person("Romain") }` is equivalent to `bind<IPerson>() with singleton { Person("Romain") }`
+      * etc.
+    * Documentation
+  - FRAMEWORK
+    * Adding Compose support for both Android (Jetpack) and Desktop (JetBrains).
+
+#### 7.4.0 (27-02-2021)
+
+  - CORE
+    * Kotlin 1.4.31
+    * Maven Central publication
+
+#### 7.3.1 (08-02-2021)
+
+  - CORE
+    * Enable new JS IR backend
+
+#### 7.3.0 (05-02-2021)
+
+  - CORE
+    * Kotlin 1.4.30
+    * Documentation
+
+#### 7.2.0 (28-12-2020)
+
+  - CORE
+    * Kotlin 1.4.20
+    * Fix memory leak with DI context
+    * Context finder and translator can now access DI container's bindings
+    * Kodein-Type 1.4 + other dependencies
+
+#### 7.1.0 (18-09-2020)
+
+  - DOCUMENTATION
+    * New documentation format https://docs.kodein.org/kodein-di/
+        * Split full documentation into chapters
+
+  - CORE
+    * Kotlin 1.4.0 
+    * Explicit public API mode
+    * Fixed possible memory leak with DI context
+    * Deprecation cycle
+    
+  - BUILD
+    * Gradle 6.5.1   
+    * New Internal Gradle Plugin   
+    * New snapshot workflow
+
+#### 7.0.0 (22-05-2020)
+
+  - DOCUMENTATION
+    * Updated http://kodein.org/Kodein-DI/
+        * New type system
+        * Module refactoring
+        * Code refactoring
+    * Migration from version 6 to 7: http://kodein.org/Kodein-DI/?7.0/migration-6to7
+
+  - CORE
+    * Modules refactoring: `org.kodein.di.generic-jvm` / `org.kodein.di.erased` combined into `org.kodein.di` 
+    * New [type system](https://github.com/Kodein-Framework/Kodein-Type) with `typeOf` to handle generics, for non JVM targets only.
+    * Package deprecation: `org.kodein.di.generic`, `org.kodein.di.erased`.
+    * Internals: non nullable context types / test re-organization / fixes
+    * Deprecation cycle
+    
+  - FRAMEWORKS
+    * Android / Ktor / TornadoFX : Migration from 6 to 7 
+    
+  - DEMOS
+    * Migrating the [Kodein-DI samples]( https://github.com/Kodein-Framework/Kodein-Samples) projects from 6 to 7
+
+  - BUILD
+    * Gradle 6.3   
+    * New Internal Gradle Plugin   
+    * Github Actions   
+
+#### 6.5.5 (15-04-2020)
+
+- CORE
+  * Kotlin `1.3.72`
+   
+#### 6.5.4 (23-03-2020)
+
+- CORE
+  * Kotlin `1.3.71`
+  
+#### 6.5.3 (04-03-2020)
+
+- CORE
+  * Kotlin `1.3.70`
+  
+#### 6.5.2 (19-02-2020)
+
+- CORE
+  * tvOS and watchOS compatibility    
+
+#### 6.5.1 (09-12-2019)
+
+- CORE
+  * Fix build issue for Kotlin/Native projects    
+  
+#### 6.5.0 (27-11-2019)
+
+- CORE
+  * Depreciate multi-args factories, we now recommend to use data classes instead   
+  * Kotlin `1.3.60`
+  * Documentation
+  
+#### 6.4.1 (07-10-2019)
+
+- CORE
+  * Hotfix on base class injection, failing on automatic context (#254)   
+
+#### 6.4.0 (19-09-2019)
+
+- CORE
+  * Allowing to use `importOnce` over extended modules
+  * Kotlin `1.3.50`
+- JVM
+  * Set the `JDK8` as default target
+- KTOR
+  * Route.controller extension functions to be able to install KodeinController routes inside the Ktor routing system.
+  * KodeinControllerFeature depreciation as the new extensions will better cover the use case
+- DEMOS
+  * The samples projects have been moved. They are in a separate repo
+    * https://github.com/Kodein-Framework/Kodein-Samples
+- CI/CD
+  * Automate builds on Travis CI
+- MISC
+  * Move to a more traditional branching model with:
+    * `master` as default 
+    * `stable` for release 
+    * `X.X` for versioning
+
+#### 6.3.4 (26-07-2019)
+
+- BUILD
+  * Fix build compatiblity for JVM targets   
+
+#### 6.3.3 (11-07-2019)
+
+- CORE
+  * Hotfix on false positive bindings (#216)   
+
+#### 6.3.2 (27-06-2019)
+
+- JVM
+  * As we build Kodein with `JDK12`, the JVM librairies no longer throw exception when used with **Gradle > 5.2**, 
+  by bringing target compatibility on `JDK8`.  
+
+#### 6.3.1 (25-06-2019)
+
+- ANDROID
+  * the function `closestKodein` aliases `kodein` for import conflicts, in modules `kodein-di-framework-android-support` and `kodein-di-framework-android-x`.
+
+
+#### 6.3.0 (20-06-2019)
+
+- TORNADOFX
+  * New framework module for TornadoFx integration thanks to the huge work of Romain Boisselle! See [documentation](https://kodein.org/Kodein-DI/?6.3/tornadofx).
+
+- CORE
+  * `importAll` allows to import multiple modules at once
+  * Kotlin `1.3.40`
+  * Named retrieval allows `val name: String by named.instance()` and `val name: String by constant()`
+  * If `fullDescriptionOnError` is true, all Kodein errors will include full type names.
+  * The `externalSource` var is now deprecated in favour of the `externalSources` mutable list.
+
+- NATIVE
+  * Updated to Gradle Module schema 1.0. Gradle 5.3.0 minimum is required!
+
+- ANDROID
+  * the function `closestKodein` aliases `kodein` for import conflicts.
+
+- KTOR
+  * the function `closestKodein` aliases `kodein` for import conflicts.
+
+
+#### 6.2.1 (24-05-2019)
+
+- ANDROID
+  * Fixed a regression to ActivityRetainedScope
+
+
+#### 6.2.0 (18-04-2019)
+
+- CORE
+  * Kotlin 1.3.30
+  * Fixed a bug in the JVM specific code that prevented a generic interface from being retrieved when a concrete class was bound.
+  * `bind() from Binding<Unit>` is now forbidden. Binding specifically the Unit type with `bind<Unit>() with Binding<Unit>` is allowed (although I cannot see why someone would use it!).
+
+- KTOR
+  * New framework module for Ktor integration thanks to the huge work of Romain Boisselle! See [documentation](https://kodein.org/Kodein-DI/?6.2/ktor).
+
+#### 6.1.0 (06-02-2019)
+
+- CORE
+  * Kotlin 1.3.20
+  * Fixed a bug that made a cached "hit" in the container loose its translator for future access (Thanks to Charles Julian Knight).
+  * Kodein.Lazy supports both `by` and `=`, which makes it easier to use (most `*Lazy` classes in Kotlin are supposed to be used with `by`).
+  * Support for lazy contexts via `on { context }.instance()` or via `override val kodeinContext = kcontext { context }`.
+
+- MULTIPLATFORM
+  * Gradle 4.10 & Gradle Metadata 0.4 by default.
+  * LGM versions are dropped since they are not needed anymore.
+
+- ANDROID
+  * Fixed a bug that may duplicate the underlying fragment when using `retainedKodein` (Thanks to Charles Julian Knight).
+  * `closestKodein` is renamed `kodein`, which is easier to read & understand, and do not require users to understand multi-layering.
+  * Introducing `subKodein` and `retainedSubKodein` that makes multi-layering easier.
+  * Official support for Android's `ViewModel` classe with it's own `kodein` accessor & documentation tips.
+  * `androidModule` is renamed to `androidCoreModule` to emphasize the fact that one should rather use `androidXModule` or `androidSupportModule`.
+  * Android specific context translators can be accessed outside of the android modules.
+
+- INTERNAL
+  * `KodeinContext` is now an interface.
+
+
+#### 6.0.1 (30-11-2018)
+
+- CORE
+  * Fixed context translator & finder "collision".
+  * Improved multi-theading.
+  
+- ANDROID
+  * Version bump.
+
+- DEPLOYMENT
+  * Fixed POM dependencies & module file uploads.
+
+#### 6.0.0 (09-11-2018)
+
+- CORE
+  * Kotlin 1.3.0
+  * Simplified `Scope` interface
+  * Introducing context translators & context finders
+  * Introducing sub scopes
+
+- NATIVE
+  * New multiplatform gradle plugin
+
+
 #### 5.3.0 (03-10-2018)
 
 - CORE

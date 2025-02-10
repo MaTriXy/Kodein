@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package org.kodein.di.android
 
 import android.app.Dialog
@@ -7,82 +9,82 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.Loader
 import android.view.View
-import org.kodein.di.Kodein
-import org.kodein.di.KodeinAware
+import org.kodein.di.*
 import kotlin.reflect.KProperty
 
-
-private fun closestKodein(thisRef: Any?, rootContext: Context): Kodein {
+private fun closestDI(thisRef: Any?, rootContext: Context): DI {
     var context: Context? = rootContext
     while (context != null) {
-        if (context != thisRef && context is KodeinAware) {
-            return context.kodein
+        if (context != thisRef && context is DIAware) {
+            return context.di
         }
         context = if (context is ContextWrapper) context.baseContext else null
     }
-    return (rootContext.applicationContext as KodeinAware).kodein
+    val appContext = rootContext.applicationContext as? DIAware
+        ?: error("Trying to find closest DI, but no DI container was found at all. Your Application should be DIAware.")
+    return appContext.di
 }
 
 /**
- * Provides a `Lazy<Kodein>`, to be used as a property delegate.
+ * Provides a `Lazy<DI>`, to be used as a property delegate.
  *
  * @param T The receiver type.
  */
-interface KodeinPropertyDelegateProvider<in T> {
+public interface DIPropertyDelegateProvider<in T> {
     /** @suppress */
-    operator fun provideDelegate(thisRef: T, property: KProperty<*>): Lazy<Kodein>
+    public operator fun provideDelegate(thisRef: T, property: KProperty<*>?): Lazy<DI>
 }
 
-private class ClosestKodeinInContextPropertyDelegateProvider : KodeinPropertyDelegateProvider<Context> {
-    override operator fun provideDelegate(thisRef: Context, property: KProperty<*>) = lazy { closestKodein(thisRef, thisRef) }
+private class ContextDIPropertyDelegateProvider : DIPropertyDelegateProvider<Context> {
+    override operator fun provideDelegate(thisRef: Context, property: KProperty<*>?) = lazy { closestDI(thisRef, thisRef) }
 }
 
-private class ClosestKodeinPropertyDelegateProvider(private val getContext: () -> Context) : KodeinPropertyDelegateProvider<Any?> {
-    override operator fun provideDelegate(thisRef: Any?, property: KProperty<*>) = lazy { closestKodein(thisRef, getContext()) }
+public class LazyContextDIPropertyDelegateProvider(private val getContext: () -> Context) : DIPropertyDelegateProvider<Any?> {
+    override operator fun provideDelegate(thisRef: Any?, property: KProperty<*>?): Lazy<DI> = lazy { closestDI(thisRef, getContext()) }
 }
 
 /**
- * Returns the closest Kodein (or the app Kodein, if no closest Kodein could be found).
+ * Returns the closest DI (or the app DI, if no closest DI could be found).
  *
  * To be used on Android's `Context` classes, such as `Activity` or `Service`.
  */
-fun closestKodein(): KodeinPropertyDelegateProvider<Context> = ClosestKodeinInContextPropertyDelegateProvider()
+public fun closestDI(): DIPropertyDelegateProvider<Context> = ContextDIPropertyDelegateProvider()
 
 /**
- * Returns the closest Kodein (or the app Kodein, if no closest Kodein could be found).
+ * Returns the closest DI (or the app DI, if no closest DI could be found).
  *
  * @param context The Android context to use to walk up the context hierarchy.
  */
-fun closestKodein(context: Context): KodeinPropertyDelegateProvider<Any?> = ClosestKodeinPropertyDelegateProvider { context }
+public fun closestDI(context: Context): LazyContextDIPropertyDelegateProvider = LazyContextDIPropertyDelegateProvider { context }
 
 /**
- * Returns the closest Kodein (or the app Kodein, if no closest Kodein could be found).
+ * Returns the closest DI (or the app DI, if no closest DI could be found).
  *
  * @param getContext A function that returns the Android context to use to walk up the context hierarchy.
  */
-fun closestKodein(getContext: () -> Context): KodeinPropertyDelegateProvider<Any?> = ClosestKodeinPropertyDelegateProvider(getContext)
+public fun closestDI(getContext: () -> Context): DIPropertyDelegateProvider<Any?> = LazyContextDIPropertyDelegateProvider(getContext)
 
 /**
- * Returns the closest Kodein (or the app Kodein, if no closest Kodein could be found).
+ * Returns the closest DI (or the app DI, if no closest DI could be found).
  */
-fun Fragment.closestKodein() = closestKodein { activity }
+public fun Fragment.closestDI(): DIPropertyDelegateProvider<Any?> = closestDI { activity }
 
 /**
- * Returns the closest Kodein (or the app Kodein, if no closest Kodein could be found).
+ * Returns the closest DI (or the app DI, if no closest DI could be found).
  */
-fun Dialog.closestKodein() = closestKodein { context }
+public fun Dialog.closestDI(): DIPropertyDelegateProvider<Any?> = closestDI { context }
 
 /**
- * Returns the closest Kodein (or the app Kodein, if no closest Kodein could be found).
+ * Returns the closest DI (or the app DI, if no closest DI could be found).
  */
-fun View.closestKodein() = closestKodein { context }
+public fun View.closestDI(): DIPropertyDelegateProvider<Any?> = closestDI { context }
 
 /**
- * Returns the closest Kodein (or the app Kodein, if no closest Kodein could be found).
+ * Returns the closest DI (or the app DI, if no closest DI could be found).
  */
-fun AbstractThreadedSyncAdapter.closestKodein() = closestKodein { context }
+public fun AbstractThreadedSyncAdapter.closestDI(): DIPropertyDelegateProvider<Any?> = closestDI { context }
 
 /**
- * Returns the closest Kodein (or the app Kodein, if no closest Kodein could be found).
+ * Returns the closest DI (or the app DI, if no closest DI could be found).
  */
-fun Loader<*>.closestKodein() = closestKodein { context }
+public fun Loader<*>.closestDI(): DIPropertyDelegateProvider<Any?> = closestDI { context }

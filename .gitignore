@@ -1,4 +1,5 @@
 # INTELLIJ
+.fleet/
 .idea/
 *.ipr
 *.iml
@@ -12,11 +13,18 @@
 build/
 out/
 !dokka/out/
-gradle.properties
-gradle.props
-local.properties
 .gradletasknamecache
+*local.properties
 
 # JS
 node_modules/
 package-lock.json
+
+# Native
+.externalNativeBuild/
+*.a
+*.o
+*.so
+
+# Kotlin
+.kotlin
